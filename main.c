@@ -19,23 +19,25 @@
 // 2. Add more oscillators
 // 3. Add Filters 
 //    -> low-pass filter 
-//    -> forrier transform 
+//    -> way better forrier transform implementation
 
+// RESTRUCTURE 
+// 
+//  A SINGLE UNIT 
+//   - Envolope Generator -> LFO (low Frequency Oscilator) -> VCO (Voltage Controlled Oscilator) >> piped into VCA below 
+//   - Envolope Generator -> VCA (Voltage Controlled Amplifier) >> Piped into VCF below
+//   - Envolope Generator -> VCF (Voltage Controlled Filter)
+//
+//  VCO -> takes in pitch as parameter (freqency) & Wave Type
+//  VCA -> takes in amplitude/velocity as parameter (volume)
+//  VCF -> takes in frequency as parameter (cutoff frequency) & Q factor (resonance)
+//
+// Multiple Units Combined together into master unit where it can be further filtered.
 
 // Functions
 //--------------------------------------------------------------------------------------
 
 
-
-
-
-
-
-void zeroSignal(float *signal) {
-    for (size_t t = 0; t < STREAM_BUFFER_SIZE; t++) {
-        signal[t] = 0.0f;
-    }
-}
 
 void accumulateSignal(float *signal, Oscillator *osc, float amplitude, int wave_type, float envolope) {
     
@@ -137,6 +139,9 @@ int main(void)
     }
     Envolope *envolope = &envolopes[0];
     
+    // KeyNotes
+    KeyNotes* Notes = InitNotes();
+    char NoteFlag = 'A'; 
   
     clock_t start, interval; 
     start = clock();
@@ -146,17 +151,10 @@ int main(void)
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
-        //printf("Is stream ready: %s\n", IsAudioStreamPlaying(stream) ? "true" : "false");
-        // Update
-        //----------------------------------------------------------------------------------
-        // if (IsKeyDown(KEY_RIGHT)) ballPosition.x += 2.0f;
-        // if (IsKeyDown(KEY_LEFT)) ballPosition.x -= 2.0f;
-        // if (IsKeyDown(KEY_UP)) ballPosition.y -= 2.0f;
-        // if (IsKeyDown(KEY_DOWN)) ballPosition.y += 2.0f;
-        //----------------------------------------------------------------------------------
+        
         mousePosition = GetMousePosition();
 
-        interval = clock() - start;
+        interval = clock() - start; //DeltaTime 
         //printf("Interval: %f\n", (float)interval);
 
 
@@ -178,10 +176,10 @@ int main(void)
 
         if (IsAudioStreamProcessed(stream)) {
             
-            zeroSignal(signal);
-            zeroSignal(signal1);
-            zeroSignal(signal2);
-            zeroSignal(signal3);
+            zeroSignal(signal, STREAM_BUFFER_SIZE);
+            zeroSignal(signal1, STREAM_BUFFER_SIZE);
+            zeroSignal(signal2, STREAM_BUFFER_SIZE);
+            zeroSignal(signal3, STREAM_BUFFER_SIZE);
 
             // for (size_t i = 0; i < NO_OSCILLATORS; i++) {
 
@@ -229,26 +227,26 @@ int main(void)
         }    
         if (!sig1 && !sig2 && !sig3) {PauseAudioStream(stream);} else {ResumeAudioStream(stream);}
 
-        if (IsKeyPressed(49)) {sig1 = !sig1;} // 48 -> 57 (0 -> 9)
-        if (IsKeyPressed(50)) {sig2 = !sig2;}
-        if (IsKeyPressed(51)) {sig3 = !sig3;}
+        if (IsKeyDown(49)) {sig1 = !sig1;} // 48 -> 57 (0 -> 9)
+        if (IsKeyDown(50)) {sig2 = !sig2;}
+        if (IsKeyDown(51)) {sig3 = !sig3;}
 
-        if (IsKeyPressed(KEY_A)) { noteFrequency = 277.18f; start = clock();}
-        if (IsKeyPressed(KEY_S)) { noteFrequency = 311.13f; start = clock();}
-        if (IsKeyPressed(KEY_D)) { noteFrequency = 369.99f; start = clock();}
-        if (IsKeyPressed(KEY_F)) { noteFrequency = 415.30f; start = clock();}
-        if (IsKeyPressed(KEY_G)) { noteFrequency = 466.16f; start = clock();}   
-        if (IsKeyPressed(KEY_H)) { noteFrequency = 554.37f; start = clock();}
-        if (IsKeyPressed(KEY_J)) { noteFrequency = 622.25f; start = clock();}
-        if (IsKeyPressed(KEY_K)) { noteFrequency = 739.99f; start = clock();}
-        if (IsKeyPressed(KEY_L)) { noteFrequency = 830.61f; start = clock();}
-        if (IsKeyPressed(KEY_Z)) { noteFrequency = 932.33f; start = clock();}
-        if (IsKeyPressed(KEY_X)) { noteFrequency = 1108.73f; start = clock();}
-        if (IsKeyPressed(KEY_C)) { noteFrequency = 1244.51f; start = clock();}
-        if (IsKeyPressed(KEY_V)) { noteFrequency = 1479.98f; start = clock();}
-        if (IsKeyPressed(KEY_B)) { noteFrequency = 1661.22f; start = clock();}
-        if (IsKeyPressed(KEY_N)) { noteFrequency = 1864.66f; start = clock();}
-        if (IsKeyPressed(KEY_M)) { noteFrequency = 2217.46f; start = clock();}
+        if (IsKeyDown(KEY_A)) { NoteFlag = 'A'; noteFrequency = 277.18f; start = clock();}
+        if (IsKeyDown(KEY_S)) { NoteFlag = 'S'; noteFrequency = 311.13f; start = clock();}
+        if (IsKeyDown(KEY_D)) { NoteFlag = 'D'; noteFrequency = 369.99f; start = clock();}
+        if (IsKeyDown(KEY_F)) { noteFrequency = 415.30f; start = clock();}
+        if (IsKeyDown(KEY_G)) { noteFrequency = 466.16f; start = clock();}   
+        if (IsKeyDown(KEY_H)) { noteFrequency = 554.37f; start = clock();}
+        if (IsKeyDown(KEY_J)) { noteFrequency = 622.25f; start = clock();}
+        if (IsKeyDown(KEY_K)) { noteFrequency = 739.99f; start = clock();}
+        if (IsKeyDown(KEY_L)) { noteFrequency = 830.61f; start = clock();}
+        if (IsKeyDown(KEY_Z)) { noteFrequency = 932.33f; start = clock();}
+        if (IsKeyDown(KEY_X)) { noteFrequency = 1108.73f; start = clock();}
+        if (IsKeyDown(KEY_C)) { noteFrequency = 1244.51f; start = clock();}
+        if (IsKeyDown(KEY_V)) { noteFrequency = 1479.98f; start = clock();}
+        if (IsKeyDown(KEY_B)) { noteFrequency = 1661.22f; start = clock();}
+        if (IsKeyDown(KEY_N)) { noteFrequency = 1864.66f; start = clock();}
+        if (IsKeyDown(KEY_M)) { noteFrequency = 2217.46f; start = clock();}
 
         
         //----------------------------------------------------------------------------------
@@ -270,6 +268,17 @@ int main(void)
         
         DrawLine(0, line1, screenWidth, line1, Fade(LIGHTGRAY, 0.6f)); //End of osc 1
         DrawLine(0,line2, screenWidth, line2, Fade(LIGHTGRAY, 0.6f)); //End of osc 2
+        // Display Keys Currently Pressed 
+        GetCurrentKeys(Notes);
+        for(int i = 0; i < 16; i++ ) {
+            if (Notes[i].isPressed) {
+                DrawText(TextFormat("%c", Notes[i].keycode), 250 + 20 * i, 10 + 10, 30, RED);
+            } else {
+                //DrawRectangle(0, screenHeight/5.0f * (i+1), screenWidth, screenHeight/5.0f, Fade(GRAY, 0.3f));
+                DrawText(TextFormat("%c", Notes[i].keycode), 250 + 20 * i, 10 + 10, 25, BLUE);
+            } 
+        } 
+
         DrawLine(0, line3, screenWidth, line3, Fade(LIGHTGRAY, 0.6f)); //End of osc 3
         //----------------------------------------------------------------------------------
         // Global Settings
@@ -280,6 +289,8 @@ int main(void)
         DrawText("JROD SYNTHESIZER", 10, 10, 20, RED);
         DrawText(TextFormat("Frequency:\t%10.0f", frequency)  , 10, 30, 20, RED);
         DrawText(TextFormat("Is streaming:\t%s", "true")  , 10, 50, 20, RED);
+        
+        DrawText(TextFormat("Last Note : %c", NoteFlag) , 10, 70, 20, RED);
         DrawFPS(10, screenHeight - 30);
 
         //----------------------------------------------------------------------------------
@@ -377,6 +388,7 @@ int main(void)
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
+    if (Notes != NULL) {free(Notes); Notes = NULL;}
     UnloadAudioStream(stream);
     CloseAudioDevice();
     CloseWindow();        // Close window and OpenGL context
